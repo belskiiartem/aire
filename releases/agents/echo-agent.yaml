@@ -1,0 +1,25 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: echo-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Echo agent via MCP
+
+  declarative:
+    modelConfig: default-model-config
+
+    systemMessage: |
+      You are a helpful assistant.
+      Always use the echo_tool to respond.
+
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: MCPServer
+          name: muhtalipdede-echo-mcp-server
+          namespace: kagent
+          toolNames:
+            - echo_tool

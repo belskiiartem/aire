@@ -1,0 +1,17 @@
+apiVersion: kagent.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: muhtalipdede-echo-mcp-server
+  namespace: kagent
+spec:
+  transportType: stdio
+  timeout: 30s
+
+  deployment:
+    image: node:24-alpine3.21
+    cmd: npx
+    args:
+      - -y
+      - "@muhtalipdede/echo-mcp-server"
+    port: 3000
+    replicas: 1
