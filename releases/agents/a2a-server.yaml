@@ -26,6 +26,7 @@ spec:
                 secretKeyRef:
                   name: openai-api-key
                   key: Authorization
+
 ---
 apiVersion: v1
 kind: Service
@@ -38,6 +39,7 @@ spec:
   ports:
     - port: 8080
       targetPort: 8000
+---
 
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
@@ -50,7 +52,6 @@ spec:
 
   declarative:
     modelConfig: default-model-config
-
     tools:
       - type: HttpServer
         httpServer:
