@@ -1,5 +1,3 @@
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,8 +37,8 @@ spec:
   ports:
     - port: 8080
       targetPort: 8000
----
 
+---
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -48,18 +46,7 @@ metadata:
   namespace: kagent
 spec:
   type: Declarative
-  description: agent for testing A2A
+  description: Server agent (provides capabilities)
 
   declarative:
     modelConfig: default-model-config
-    tools:
-      - type: HttpServer
-        httpServer:
-          port: 8080
-          image: belskiiartem/mock-agent:v0.0.1
-          env:
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openai-api-key
-                  key: Authorization
