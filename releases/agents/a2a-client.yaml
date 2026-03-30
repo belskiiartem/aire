@@ -20,7 +20,7 @@ spec:
             - containerPort: 8000
           env:
             - name: AGENT_1_URL
-              value: "http://a2a-demo-server.kagent.svc.cluster.local:8000"
+              value: "http://a2a-demo-server.kagent.svc.cluster.local:8080"
 
 ---
 apiVersion: v1
