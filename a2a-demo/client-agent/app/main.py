@@ -32,7 +32,7 @@ def agent_card():
 def chat(req: ChatRequest):
     result = app_graph.invoke({
         "input": req.message
-    })
+    }, timeout=120)
     return {
         "response": result.get("final_answer"),
         "reason": result.get("reason")
