@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-demo-client
+  namespace: kagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-demo-client
+  template:
+    metadata:
+      labels:
+        app: a2a-demo-client
+    spec:
+      containers:
+        - name: agent
+          image: belskiiartem/mock-agent:v0.0.2
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_1_URL
+              value: "http://a2a-demo-server:8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a2a-demo-client
+  namespace: kagent
+spec:
+  selector:
+    app: a2a-demo-client
+  ports:
+    - port: 8080
+      targetPort: 8000
+---      
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: a2a-demo-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Mock agent for testing
+
+  declarative:
+    modelConfig: default-model-config
+
+    tools:
+      - type: HttpServer
+        httpServer:
+          port: 8080
+          image: belskiiartem/mock-agent:v0.0.2
+          env:
+            - name: AGENT_1_URL
+              value: "http://a2a-demo-server:8080"

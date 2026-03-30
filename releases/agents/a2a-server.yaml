@@ -1,0 +1,64 @@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-demo-server
+  namespace: kagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-demo-server
+  template:
+    metadata:
+      labels:
+        app: a2a-demo-server
+    spec:
+      containers:
+        - name: agent
+          image: belskiiartem/mock-agent:v0.0.1
+          ports:
+            - containerPort: 8000
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: Authorization
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a2a-demo-server
+  namespace: kagent
+spec:
+  selector:
+    app: a2a-demo-server
+  ports:
+    - port: 8080
+      targetPort: 8000
+
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: a2a-demo-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: agent for testing A2A
+
+  declarative:
+    modelConfig: default-model-config
+
+    tools:
+      - type: HttpServer
+        httpServer:
+          port: 8080
+          image: belskiiartem/mock-agent:v0.0.1
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: Authorization
