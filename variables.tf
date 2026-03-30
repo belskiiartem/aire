@@ -4,4 +4,12 @@ variable "oci_registry" {
 
 variable "releases_version" {
   type = string
-} 
+}
+
+variable "inventory_crds" {
+  type = list(string)
+}
+
+variable "inventory_crds_url" {
+  type = string
+}

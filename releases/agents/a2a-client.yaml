@@ -18,6 +18,9 @@ spec:
           image: belskiiartem/mock-agent:v0.0.2
           ports:
             - containerPort: 8000
+          env:
+            - name: AGENT_1_URL
+              value: "http://a2a-demo-server:8080"            
 
 ---
 apiVersion: v1
