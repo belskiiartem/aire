@@ -46,7 +46,7 @@ spec:
     modelConfig: default-model-config
 
     tools:
-      - type: agent
+      - type: Agent
         agent:
           name: a2a-demo-server
           namespace: kagent                  
