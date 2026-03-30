@@ -36,7 +36,7 @@ spec:
     app: a2a-demo-server
   ports:
     - port: 8080
-      targetPort: 8000
+      targetPort: 8080
 
 ---
 apiVersion: kagent.dev/v1alpha2
