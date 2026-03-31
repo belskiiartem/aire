@@ -6,3 +6,5 @@ resources:
   - kagent.yaml
   - mcp/echo-mcp-server.yaml
   - agents/echo-agent.yaml
+  - agents/a2a-server.yaml
+  - agents/a2a-client.yaml
