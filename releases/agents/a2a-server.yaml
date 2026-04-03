@@ -31,6 +31,10 @@ spec:
                   key: Authorization
             - name: "PHOENIX_ENDPOINT"
               value: "http://phoenix-svc.phoenix.svc.cluster.local:6006"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://phoenix-svc.phoenix.svc.cluster.local:6006
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
 
 ---
 apiVersion: v1
