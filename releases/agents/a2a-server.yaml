@@ -24,6 +24,13 @@ spec:
                 secretKeyRef:
                   name: openai-api-key
                   key: Authorization
+            - name: PHOENIX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-api-key
+                  key: Authorization
+            - name: "PHOENIX_ENDPOINT"
+              value: "http://phoenix-svc.phoenix.svc.cluster.local:6006"
 
 ---
 apiVersion: v1

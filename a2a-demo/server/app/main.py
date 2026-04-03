@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from app.graph import app_graph
+from phoenix.otel import register
+
+tracer_provider = register(
+  project_name="default",
+)
+
+tracer = tracer_provider.get_tracer(__name__)
 
 app = FastAPI()
 
@@ -23,6 +30,7 @@ def agent_card():
         }
     }
 
+@tracer.chain
 @app.post("/chat")
 def chat(req: ChatRequest):
     result = app_graph.invoke({
