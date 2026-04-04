@@ -35,8 +35,8 @@ def agent_card():
         ]
     }
 
-@tracer.chain
 @app.post("/chat")
+@tracer.chain
 def chat(req: ChatRequest):
     result = app_graph.invoke({
         "input": req.message
