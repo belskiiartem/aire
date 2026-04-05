@@ -21,6 +21,19 @@ spec:
           env:
             - name: AGENT_1_URL
               value: "http://a2a-demo-server.kagent.svc.cluster.local:8080"
+            - name: PHOENIX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-api-key
+                  key: Authorization
+            - name: "PHOENIX_ENDPOINT"
+              value: "http://phoenix-svc.phoenix.svc.cluster.local:6006"
+            - name: "PHOENIX_COLLECTOR_ENDPOINT"
+              value: "http://phoenix-svc.phoenix.svc.cluster.local:6006"              
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://phoenix-svc.phoenix.svc.cluster.local:4318
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
 
 ---
 apiVersion: v1

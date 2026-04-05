@@ -38,3 +38,4 @@ terraform.rc
 
 secrets/
 .terraform.lock.hcl
+.idea
