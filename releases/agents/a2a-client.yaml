@@ -47,9 +47,12 @@ spec:
 
   declarative:
     modelConfig: default-model-config
-
+    systemMessage: |
+      You are a Kubernetes operations assistant.
+      Help diagnose cluster problems using available tools.
+      
     tools:
       - type: Agent
         agent:
           name: a2a-demo-server
-          namespace: kagent                  
+          namespace: kagent
