@@ -57,7 +57,7 @@ kind: Agent
 metadata:
   name: a2a-demo-server
   namespace: kagent
-  app: kagent
+  app: a2a-demo-server
 spec:
   type: Declarative
   description: Server agent (provides capabilities)
