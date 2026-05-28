@@ -54,7 +54,6 @@ kind: Agent
 metadata:
   name: a2a-demo-client
   namespace: kagent
-  app: kagent
 spec:
   type: Declarative
   description: Client agent (calls server agent)
