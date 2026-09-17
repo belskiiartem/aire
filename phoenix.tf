@@ -7,7 +7,7 @@ resource "helm_release" "phoenix" {
   repository = "oci://registry-1.docker.io/arizephoenix"
   chart      = "phoenix-helm"
 
-  version    = "5.0.20"
+  version    = "12.0.10"
 
   values = [
     yamlencode({

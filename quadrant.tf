@@ -5,6 +5,6 @@ resource "helm_release" "qdrant" {
 
   repository = "https://qdrant.github.io/qdrant-helm"
   chart      = "qdrant"
-  version    = "1.17.1"
+  version    = "1.19.1"
 
 }
