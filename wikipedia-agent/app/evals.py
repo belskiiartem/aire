@@ -8,8 +8,11 @@ import time
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
-from . import config
-from .graph import build_graph
+from . import config, tracing
+
+tracing.setup()
+
+from .graph import build_graph  # noqa: E402
 
 
 def _check(case: dict, answer: str, calls: list[dict]) -> list[str]:

@@ -12,13 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
-from . import config
+from . import config, tracing
 
-if config.PHOENIX_COLLECTOR_ENDPOINT:
-    from openinference.instrumentation.langchain import LangChainInstrumentor
-    from phoenix.otel import register
-
-    LangChainInstrumentor().instrument(tracer_provider=register(project_name=config.PHOENIX_PROJECT, batch=True))
+tracing.setup()
 
 from .graph import build_graph, collect_artifacts, registry  # noqa: E402
 
@@ -52,7 +48,8 @@ def healthz():
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     thread_id = req.thread_id or uuid.uuid4().hex
-    cfg = {"configurable": {"thread_id": thread_id}, "recursion_limit": config.MAX_STEPS * 2}
+    cfg = {"configurable": {"thread_id": thread_id}, "metadata": {"session_id": thread_id},
+           "recursion_limit": config.MAX_STEPS * 2}
     before = len(graph.get_state(cfg).values.get("messages", []))
     t0 = time.monotonic()
     try:

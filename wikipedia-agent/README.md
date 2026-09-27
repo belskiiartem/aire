@@ -45,7 +45,15 @@ python -m app.evals --model gpt-4.1-nano               # сценарії з ski
    - маршрут `/wikipedia-analyst` для посилань на PDF.
 
    Flux розгортає все це з тегу `vX.Y.Z` артефакту `releases`.
-3. **Секрет**: `terraform apply` (ресурс `openAiSecret-wikipedia-agent`) копіює ключ OpenAI в namespace `wikipedia-agent`.
+3. **Секрети** створюються через `terraform apply` з файлів у `secrets/`, які не потрапляють у git:
+   - `openAiSecret-wikipedia-agent` — ключ OpenAI для agentgateway;
+   - `phoenixKey-wikipedia-agent` — API-ключ Phoenix.
+
+## Трасування (Phoenix)
+
+Трасування вмикається змінною `PHOENIX_COLLECTOR_ENDPOINT`, API-ключ береться з `PHOENIX_API_KEY` ([app/tracing.py](app/tracing.py)). У кластері траси йдуть у проєкт `wikipedia-agent` на `phoenix-svc.phoenix:6006`.
+
+Один запит дає близько 9 спанів: граф LangGraph, кожен виклик моделі (з токенами та промптом) і кожна команда навички (з аргументами й JSON-результатом). Спани одного діалогу групуються в сесію за `session.id`. Щоб прибрати шум, внутрішні спани `a2a-sdk` вимкнено. Прогін `python -m app.evals` теж трасується, тож результати оцінювання моделей можна порівнювати в Phoenix.
 
 Чат: kagent UI → агент `wikipedia-agent/wikipedia-analyst`.
 

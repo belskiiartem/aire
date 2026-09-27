@@ -13,3 +13,8 @@ resource "kubectl_manifest" "openAiSecret-wikipedia-agent" {
   yaml_body          = file("secrets/openAIkey.yaml")
   override_namespace = "wikipedia-agent"
 }
+
+# Phoenix API key for wikipedia-agent tracing (project "wikipedia-agent").
+resource "kubectl_manifest" "phoenixKey-wikipedia-agent" {
+  yaml_body = file("secrets/phoenix-wikipedia-agent.yaml")
+}

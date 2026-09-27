@@ -5,14 +5,24 @@ Conversation state is stored in the kagent controller (KAgentCheckpointer), so i
 """
 from __future__ import annotations
 
-import httpx
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill
-from fastapi.staticfiles import StaticFiles
-from kagent.core import KAgentConfig
-from kagent.langgraph import KAgentApp, KAgentCheckpointer
+import os
 
-from . import __version__, config
-from .graph import build_graph, registry
+# a2a-sdk traces its internal event queues (~40 spans per request); keep Phoenix focused on the agent.
+# Read at import time, so it must be set before `a2a` is imported.
+os.environ.setdefault("OTEL_INSTRUMENTATION_A2A_SDK_ENABLED", "false")
+
+import httpx  # noqa: E402
+from a2a.types import AgentCapabilities, AgentCard, AgentSkill  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from kagent.core import KAgentConfig  # noqa: E402
+from kagent.langgraph import KAgentApp, KAgentCheckpointer  # noqa: E402
+
+from . import __version__, config, tracing  # noqa: E402
+
+# Our Phoenix exporter replaces kagent's built-in OTEL setup; two global tracer providers would conflict.
+phoenix = tracing.setup()
+
+from .graph import build_graph, registry  # noqa: E402
 
 kagent_config = KAgentConfig()
 graph = build_graph(checkpointer=KAgentCheckpointer(client=httpx.AsyncClient(base_url=kagent_config.url),
@@ -36,5 +46,5 @@ agent_card = AgentCard(
     )],
 )
 
-app = KAgentApp(graph=graph, agent_card=agent_card, config=kagent_config).build()
+app = KAgentApp(graph=graph, agent_card=agent_card, config=kagent_config, tracing=not phoenix).build()
 app.mount("/artifacts", StaticFiles(directory=config.ARTIFACTS_DIR), name="artifacts")
