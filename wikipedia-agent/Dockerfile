@@ -9,8 +9,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# fully pinned lock (see requirements.in); explicit pins let pip install the OpenTelemetry *b0 releases
 COPY requirements.txt .
-COPY skills/wikipedia-interest/requirements.txt skills/wikipedia-interest/requirements.txt
 RUN pip install -r requirements.txt
 
 COPY skills ./skills
@@ -21,4 +21,5 @@ USER 10001
 VOLUME /data
 EXPOSE 8080
 
+# Standalone API + web UI. For kagent (BYO Agent) the command is `uvicorn app.kagent_main:app ...`.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

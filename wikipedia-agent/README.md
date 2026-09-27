@@ -1,13 +1,22 @@
 # wikipedia-agent
 
-Агент на LangGraph, який використовує навичку [wikipedia-interest](skills/wikipedia-interest/) і розгортається в кластер через Flux. Звертається до LLM через agentgateway.
+Агент на LangGraph, який використовує навичку [wikipedia-interest](skills/wikipedia-interest/). У кластері він зареєстрований у **kagent** як `Agent` типу BYO (`wikipedia-analyst`), розгортається через Flux і звертається до LLM через agentgateway.
 
 ```
-browser ──► agentgateway /wikipedia-agent ──► wikipedia-agent (FastAPI + LangGraph)
-                                                  │  run_skill_command
-                                                  ├──► skills/wikipedia-interest/scripts/wiki-interest ──► Wikimedia API
-                                                  └──► agentgateway /llm/wikipedia-agent ──► OpenAI (ключ і ліміти — у gateway)
+kagent UI ──► kagent controller ──A2A──► wikipedia-analyst (LangGraph, app/kagent_main.py)
+                     ▲                        │  run_skill_command
+                     └─ історія діалогів ─────┤──► skills/wikipedia-interest ──► Wikimedia API
+                        (KAgentCheckpointer)  └──► agentgateway /llm/wikipedia-agent ──► OpenAI
+
+браузер ──► agentgateway /wikipedia-analyst/artifacts/... ──► PDF / PNG (PVC)
 ```
+
+Один образ підтримує два режими запуску:
+
+| Режим | Команда | Для чого |
+|---|---|---|
+| kagent BYO | `uvicorn app.kagent_main:app` | A2A-сервер для kagent; історія діалогів зберігається в контролері kagent і переживає перезапуск |
+| Автономний | `uvicorn app.main:app` (за замовчуванням) | Власний API (`/chat`) і веб-чат, пам'ять у поді. Для локальної розробки й evals |
 
 ## Як це влаштовано
 
@@ -28,13 +37,24 @@ python -m app.evals --model gpt-4.1-nano               # сценарії з ski
 
 ## Розгортання
 
-1. **Образ**: [.github/workflows/wikipedia-agent.yaml](../.github/workflows/wikipedia-agent.yaml) запускає тести й публікує `ghcr.io/belskiiartem/aire/wikipedia-agent`. На main публікуються теги `sha-<commit>` і `latest`, на тег `wikipedia-agent-v0.1.0` — тег `0.1.0`.
-2. **Маніфести**: [releases/wikipedia-agent.yaml](../releases/wikipedia-agent.yaml) містить Namespace, `AgentgatewayBackend` (OpenAI), LLM-маршрут з обмеженням 60 запитів/хв і 300 тис. токенів/год, Deployment, Service і маршрут UI. Файл підключено в `releases/kustomization.yaml`, тож він потрапить у кластер з наступним релізом `v*` артефакту `releases`.
-3. **Секрет**: `terraform apply` після першого розгортання Flux (ресурс `openAiSecret-wikipedia-agent` у `manifests.tf`) копіює ключ у namespace `wikipedia-agent`.
+1. **Образ**: [.github/workflows/wikipedia-agent.yaml](../.github/workflows/wikipedia-agent.yaml) запускає тести й публікує `ghcr.io/belskiiartem/aire/wikipedia-agent` (`sha-*`, `latest` з main, семвер із тегу `wikipedia-agent-vX.Y.Z`).
+2. **Маніфести**: [releases/wikipedia-agent.yaml](../releases/wikipedia-agent.yaml) містить:
+   - `AgentgatewayBackend` (OpenAI) і LLM-маршрут з обмеженням 60 запитів/хв і 300 тис. токенів/год;
+   - PVC для звітів і кешу;
+   - kagent `Agent` типу BYO;
+   - маршрут `/wikipedia-analyst` для посилань на PDF.
 
-UI: `http://<gateway>/wikipedia-agent/`.
+   Flux розгортає все це з тегу `vX.Y.Z` артефакту `releases`.
+3. **Секрет**: `terraform apply` (ресурс `openAiSecret-wikipedia-agent`) копіює ключ OpenAI в namespace `wikipedia-agent`.
+
+Чат: kagent UI → агент `wikipedia-agent/wikipedia-analyst`.
+
+## Залежності
+
+`requirements.in` містить прямі залежності, а `requirements.txt` — повністю закріплений lock (команда генерації вказана в заголовку `requirements.in`). kagent 0.10.x зібраний під `a2a-sdk` 0.3, бо у версії 1.x модуль `a2a.server.apps` видалено, тому `a2a-sdk` зафіксовано на 0.3.26.
 
 ## Обмеження поточної версії
 
-- `replicas: 1`: пам'ять діалогів і кеш зберігаються в поді (`emptyDir`) і зникають під час перезапуску. Для масштабування потрібні Postgres-checkpointer і PVC або об'єктне сховище для звітів.
-- Автентифікації на UI/API немає, а LLM-маршрут також доступний на зовнішньому gateway (його захищають лише ліміти частоти й токенів). Для продакшну потрібні JWT/API-key-політика в agentgateway або окремий внутрішній Gateway.
+- `PUBLIC_BASE_URL` прописано під NodePort minikube (`192.168.49.2:32700`). В іншому оточенні його треба замінити.
+- PVC має режим `ReadWriteOnce`, тому працює одна репліка. Для масштабування звіти треба перенести в об'єктне сховище.
+- Автентифікації на маршрутах `/wikipedia-analyst` і `/llm/wikipedia-agent` немає: LLM-маршрут захищають лише ліміти частоти й токенів. Для продакшну потрібні JWT/API-key-політика в agentgateway або окремий внутрішній Gateway.

@@ -9,6 +9,9 @@ LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "not-ne
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4.1-mini")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0"))
 
+# Where users reach /artifacts (e.g. http://gateway/wikipedia-agent). Empty = relative links, fine for the built-in UI.
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
+
 SKILLS_DIR = Path(os.getenv("SKILLS_DIR", ROOT / "skills"))
 WORK_DIR = Path(os.getenv("WORK_DIR", ROOT / "work"))
 ARTIFACTS_DIR = WORK_DIR / "artifacts"

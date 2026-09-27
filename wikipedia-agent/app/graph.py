@@ -25,7 +25,8 @@ SKILL_ENV = {
 
 def _public_paths(text: str) -> str:
     # Absolute container paths are meaningless to the user and cost tokens; expose them as API-relative URLs.
-    return text.replace(str(config.ARTIFACTS_DIR), "artifacts")
+    prefix = f"{config.PUBLIC_BASE_URL}/artifacts" if config.PUBLIC_BASE_URL else "artifacts"
+    return text.replace(str(config.ARTIFACTS_DIR), prefix)
 
 
 @tool
@@ -72,8 +73,8 @@ def system_prompt() -> str:
         "never from memory, and you make assumptions and limitations explicit.",
         f"Today is {date.today():%Y-%m-%d}.",
         "Reply in the language the user writes in. Keep answers short and scannable (tables, bullets).",
-        "Artifacts such as report.pdf are served to the user at the relative URLs the tools return "
-        "(e.g. artifacts/<run_id>/report.pdf); include them as markdown links.",
+        "Artifacts such as report.pdf are served to the user at the URLs the tools return; "
+        "include them as markdown links exactly as returned.",
         "If a request is ambiguous (unknown topic meaning, unclear languages), make a reasonable assumption, "
         "state it, and proceed; the user can refine it afterwards.",
         "Installed skills:\n" + registry.catalogue(),
@@ -119,6 +120,6 @@ def collect_artifacts(messages) -> list[str]:
         if isinstance(data, dict) and "pdf" in data and isinstance(data["pdf"], str):
             arts = {**arts, "pdf": data["pdf"]}
         for v in arts.values():
-            if isinstance(v, str) and v.startswith("artifacts/") and v not in found:
+            if isinstance(v, str) and "artifacts/" in v and v not in found:
                 found.append(v)
     return found
