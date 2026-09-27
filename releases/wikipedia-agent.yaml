@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wikipedia-agent
+---
+# LLM access goes through agentgateway: the agent holds no provider key, and model choice,
+# failover and cost limits are managed here rather than in the image.
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: openai
+  namespace: wikipedia-agent
+spec:
+  ai:
+    provider:
+      openai:
+        model: gpt-4.1-mini
+  policies:
+    auth:
+      secretRef:
+        name: openai-api-key
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wikipedia-agent-llm
+  namespace: wikipedia-agent
+spec:
+  parentRefs:
+  - name: agentgateway-external
+    namespace: agentgateway-system
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /llm/wikipedia-agent
+    backendRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: openai
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: wikipedia-agent-llm-limits
+  namespace: wikipedia-agent
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: wikipedia-agent-llm
+  traffic:
+    rateLimit:
+      local:
+      - requests: 60
+        unit: Minutes
+      - tokens: 300000
+        unit: Hours
+---
+# Reports and the pageview cache. Conversation history lives in the kagent controller (KAgentCheckpointer).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wikipedia-analyst-data
+  namespace: wikipedia-agent
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+# kagent deploys the image (Deployment + Service "wikipedia-analyst") and talks to it over A2A on :8080.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: wikipedia-analyst
+  namespace: wikipedia-agent
+spec:
+  type: BYO
+  description: Market research on Wikipedia pageviews - is interest in a topic growing, in which languages, and how trustworthy is the trend. Produces charts and one-page PDF reports.
+  byo:
+    deployment:
+      image: ghcr.io/belskiiartem/aire/wikipedia-agent:0.2.0
+      cmd: uvicorn
+      args: ["app.kagent_main:app", "--host", "0.0.0.0", "--port", "8080"]
+      env:
+      - name: LLM_BASE_URL
+        value: http://agentgateway-external.agentgateway-system.svc.cluster.local/llm/wikipedia-agent
+      - name: LLM_MODEL
+        value: gpt-4.1-mini
+      # where users open report links from the kagent UI (minikube gateway NodePort)
+      - name: PUBLIC_BASE_URL
+        value: http://192.168.49.2:32700/wikipedia-analyst
+      - name: WIKI_USER_AGENT
+        value: wikipedia-interest-skill/0.2 (https://github.com/belskiiartem/aire)
+      # traces of every model call and skill command -> Phoenix project "wikipedia-agent"
+      - name: PHOENIX_COLLECTOR_ENDPOINT
+        value: http://phoenix-svc.phoenix.svc.cluster.local:6006
+      - name: PHOENIX_PROJECT
+        value: wikipedia-agent
+      - name: PHOENIX_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: phoenix-api-key
+            key: PHOENIX_API_KEY
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: wikipedia-analyst-data
+      volumeMounts:
+      - name: data
+        mountPath: /data
+---
+# Serves /artifacts (PDF, charts) linked from agent answers.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wikipedia-analyst
+  namespace: wikipedia-agent
+spec:
+  parentRefs:
+  - name: agentgateway-external
+    namespace: agentgateway-system
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /wikipedia-analyst
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - name: wikipedia-analyst
+      port: 8080

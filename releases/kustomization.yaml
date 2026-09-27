@@ -5,3 +5,4 @@ resources:
   - agentgateway.yaml
   - kagent.yaml
   - agentregistry.yaml
+  - wikipedia-agent.yaml

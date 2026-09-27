@@ -1,0 +1,109 @@
+{
+ "version": "2.0",
+ "description": "End-to-end agent scenarios. Run with `python -m app.evals` from wikipedia-agent/. Checks are deterministic (tool calls + answer text); no LLM judge.",
+ "cases": [
+  {
+   "id": "fasting-pl-cs",
+   "prompt": "Порівняй зростання інтересу до інтервального голодування в польськомовній та чеськомовній Wikipedia за останні два роки.",
+   "expect_tool_args": [
+    "analyze",
+    "--languages",
+    "Intermittent fasting"
+   ],
+   "expect_answer_any": [
+    [
+     "pl",
+     "польськ",
+     "Polish"
+    ]
+   ],
+   "expect_answer_all_any": [
+    [
+     "немає",
+     "відсутн",
+     "no article",
+     "not exist",
+     "missing"
+    ]
+   ],
+   "forbid_answer": [
+    "Stres oksydacyjny"
+   ]
+  },
+  {
+   "id": "astronomy-uk-confidence",
+   "prompt": "Ми думаємо додати курс з астрономії до освітнього застосунку. Чи зростає інтерес до цієї теми в україномовній Wikipedia, і наскільки цьому зростанню можна довіряти?",
+   "expect_tool_args": [
+    "analyze",
+    "uk",
+    "Astronomy"
+   ],
+   "expect_answer_all_any": [
+    [
+     "довір",
+     "confidence",
+     "впевнен"
+    ],
+    [
+     "%"
+    ]
+   ]
+  },
+  {
+   "id": "english-learning-report",
+   "prompt": "Ми створюємо застосунок для вивчення мов. Порівняй інтерес до вивчення англійської в польській, українській, турецькій та в'єтнамській Wikipedia та підготуй короткий звіт: які аудиторії варто дослідити наступними й чому?",
+   "expect_tool_args": [
+    "analyze",
+    "pl",
+    "uk",
+    "tr"
+   ],
+   "expect_tool_args_any": [
+    [
+     "vi",
+     "vn"
+    ],
+    [
+     "report"
+    ]
+   ],
+   "expect_answer_all_any": [
+    [
+     "pdf",
+     "PDF"
+    ]
+   ]
+  },
+  {
+   "id": "follow-up-window",
+   "prompt": "А тепер для тих самих даних порівняй останні шість місяців з першими шістьма.",
+   "after": "astronomy-uk-confidence",
+   "expect_answer_all_any": [
+    [
+     "6",
+     "шість"
+    ]
+   ],
+   "max_analyze_calls": 1
+  },
+  {
+   "id": "change-assumptions",
+   "prompt": "Добре. Тепер додай німецьку й польську Wikipedia і візьми період три роки замість двох.",
+   "after": "astronomy-uk-confidence",
+   "expect_tool_args": [
+    "analyze",
+    "de",
+    "pl",
+    "uk"
+   ],
+   "expect_tool_args_any": [
+    [
+     "3y",
+     "36m",
+     "--start 2023"
+    ]
+   ],
+   "max_analyze_calls": 1
+  }
+ ]
+}

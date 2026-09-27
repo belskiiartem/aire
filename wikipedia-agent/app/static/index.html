@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wikipedia interest agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<style>
+  :root { --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --line: #e4e3df; --accent: #2a78d6; }
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 0; background: var(--surface); color: var(--ink); }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; }
+  .msg { padding: 10px 14px; border-radius: 8px; margin: 10px 0; border: 1px solid var(--line); background: #fff; }
+  .user { background: #eef4fc; }
+  .meta { color: var(--ink-2); font-size: 12px; }
+  table { border-collapse: collapse; } td, th { border-bottom: 1px solid var(--line); padding: 3px 8px; }
+  form { display: flex; gap: 8px; position: sticky; bottom: 0; background: var(--surface); padding: 12px 0; }
+  textarea { flex: 1; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 0 18px; font: inherit; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body>
+<main>
+  <h2>Wikipedia interest agent</h2>
+  <p class="meta">Наприклад: «Чи зростає інтерес до астрономії в україномовній Wikipedia, і наскільки цьому можна довіряти?»</p>
+  <div id="log"></div>
+  <form id="f"><textarea id="q" rows="2" required></textarea><button>Надіслати</button></form>
+</main>
+<script>
+let thread = null;
+// Works both at / and behind a gateway prefix such as /wikipedia-agent (with or without a trailing slash).
+const base = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
+const log = document.getElementById("log");
+function add(cls, html) { const d = document.createElement("div"); d.className = "msg " + cls; d.innerHTML = html; log.appendChild(d); d.scrollIntoView(); return d; }
+document.getElementById("f").onsubmit = async (e) => {
+  e.preventDefault();
+  const q = document.getElementById("q"); const text = q.value.trim(); if (!text) return;
+  add("user", marked.parse(text)); q.value = "";
+  const pending = add("", "<span class='meta'>Аналізую…</span>");
+  try {
+    const r = await fetch(base + "chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, thread_id: thread }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.status);
+    thread = d.thread_id;
+    const charts = d.artifacts.filter(a => a.endsWith(".png")).map(a => `<img src="${base + a}">`).join("");
+    pending.innerHTML = marked.parse(d.answer.replaceAll("](artifacts/", "](" + base + "artifacts/")) + charts +
+      `<div class="meta">${d.tool_calls.length} tool calls · ${d.usage.input_tokens + d.usage.output_tokens} tokens · ${d.seconds}s</div>`;
+  } catch (err) { pending.innerHTML = "<b>Помилка:</b> " + err.message; }
+};
+</script>
+</body>
+</html>
